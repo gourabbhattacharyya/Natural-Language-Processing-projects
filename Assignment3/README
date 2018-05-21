@@ -1,0 +1,132 @@
+####################################################################################
+		
+		README for NLP - CSE 628 - HW3 - Gourab Bhattacharyya - 170048888
+
+####################################################################################
+
+System configuration:
+--------------------
+
+OS:
+
+No LSB modules are available.
+Distributor ID: Ubuntu
+Description:    Ubuntu 16.04.4 LTS
+Release:        16.04
+Codename:       xenial
+
+
+Python Version: Python 2.7.12
+
+
+
+Implmentation:
+--------------
+
+
+	Prerequisites : Before implementing the below modules we need any previously computed wordToVec model so that embeddings can be extracted from the same to be used for training and prediction.
+
+
+
+	As part the Transition Parsing with Neural Networks implementation, I have updated total of 2 files. Details of them are below:
+
+	1. ParsingSystem.py : 
+
+							In this file, I have implemented arc standard algorithm to based on the increamentaly Deterministic Dependency Parsing that has been discussed in the paper. In this implementation:
+								- I have defined 2 variables w1 and w2 which retrieves 1st and 0th element from the stack and store the elements in the variables respectively.
+								- from the given transitions obtained from the parsing system check whether it starts with "L" or "R":
+									-if transition starts with "L" then add an arc with the given label(t[2:-1]) from the head node(w2) to the dependent node(w1)
+									-if transition starts with "R" then add an arc with the given label(t[2:-1]) from the head node(w1) to the dependent node(w2)
+									-if both the above condition fails then remove the top element from the buffer and add it to the stack
+								- return the configured configuration from this implementation
+
+
+
+
+	2.DependencyParser.py : 
+
+							This is the main file which starts the execution of the system. In this file, I have implementated the functionality like loading embeddings, extracting features, training model and making prediction.
+
+							- getFeatures() : In this module, I am generating features to be used for training and prediction. 
+								- I have defined 3 list fWord, fPos and fLabel.
+								- I am extracting top 3 elements from stack and using them to extrtact wordID and posID and appending them to fWord and fPos respectively.
+								- I am extracting top 3 elements from buffer and using them to extrtact wordID and posID and appending them to fWord and fPos respectively.
+								- again for top 3 elemts from stack, I am getting left child, right child, left child of left node and right child of right node. Appending these values to fWord, fPos and fLabel.
+								- Finally append all the elements to a single list called features and return the list.
+
+
+
+							- forward_pass() : In this method, I have implemented forward propagation as descibed in the paper - "A Fast and Accurate Dependency Parser using Neural Networks"(2014):
+							I have tried with several configuration as mentioned below:
+								- As mentioned in the paper which is one hidden layer with cube non-linearity and return the prediction
+								- one hidden layer with Relu non-linearity and return the prediction
+								- one hidden layer with Sigmoid non-linearity and return the prediction
+								- one hidden layer with Tanh non-linearity and return the prediction
+								- Two hidden layers with cube and tanh non-linearity and return the prediction
+								- Three hidden layers with cube, relu and tanh non-linearity and return the prediction
+
+							The best configuration among all the above mentioned is with the cube non-linearity.
+
+
+
+
+
+							- build_graph() : In the module, below steps are followed:
+								- defined three place holder variables train_inputs, train_labels and test_inputs to be used for loss calculation and prediction.
+								- defined initial weights_input, weights_output using tf.random_normal with mean 0 and standard deviation as sqrt(1/# of transitions)
+								- defined biases_input and b2 as bias of zero values
+								- extract train embedding in variable train_embed and reshape the same using train_inputs shape
+								- call forward_pass(train_embed, weights_input, biases_input, weights_output) and store the predicted value in prediction variable
+								- calculate loss value using tf.nn.sparse_softmax_cross_entropy_with_logits with prediction as logits and argmax(train_labels) as labels
+								- add the loss with value obtained by multiplying specified learning rate and sum of weights_input
+								- use tf.reduce_mean to ontain the final loss value
+								- define tf.train.GradientDescentOptimizer with specified learning rate
+								- compute the gradients using compute_gradients
+								- clip the graients by using tf.clip_by_norm, to avoid exploding or vanishing gradients
+								- obtain the optimized and clipped gradient value to be used for training purposes
+								- exract test embedding in variable test_embed using test_inputs and reshape the same
+								- call forward_pass(test_embed, weights_input, biases_input, weights_output) and get prediction for test embeddings
+							Outputs returned from this module like loss, clipped gradients and test predictions will be used fro training the model using DEV data and making prediction using TEST data.
+
+
+
+
+
+
+
+
+
+Execution Instruction:
+----------------------
+						-to execute and train the model and generating prediction run the below command:
+
+							- python DependencyParser.py
+
+
+
+
+Result FIles:
+-------------
+						- prediction files(output of DependencyParser.py):
+
+									- results_test.conll [This stores the value of predictions executed on test.conll data]
+
+
+
+
+
+
+Best Accuracy(Configuration) Achived for DEV file (word_analogy_dev.txt):
+------------------------------------------------------------------------
+
+						- Best accuracy achived with the configuration
+							- one hidden layer with cube non-linearity (DependencyParser.py) with all the configuration parameters mentioened in config.py
+
+
+
+
+Report:
+-------
+					- A PDF report (REPORT.pdf) has been generated with all the experimented configuration details and the achived accuracy for the DEV data.
+
+																-------------------- END of FILE ----------------------  
